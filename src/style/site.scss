@@ -1,0 +1,6 @@
+$largeSceenWidth: 600px;
+@media only screen and (max-width: $largeSceenWidth) {
+    .hidden-lg {
+        display: none;
+    }
+}
