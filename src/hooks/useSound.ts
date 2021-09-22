@@ -1,61 +1,49 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
 
 interface UseSoundOutput {
-    paused: boolean;
-    ready: boolean;
-    toggleState: () => void;
+    playing: boolean;
+    play: () => Promise<void>;
+    pause: () => void;
 }
 
 const useSound = (srcs: string[]): UseSoundOutput => {
-    const [srcIndex, setSrcIndex] = useState<number>(0);
-    const [audio] = useState<HTMLAudioElement>(new Audio(srcs[srcIndex]));
-    const [isPlaying, setIsPlaying] = useState<boolean>(false);
-    const [ready, setReady] = useState<boolean>(false);
+    const [audio] = useState<HTMLAudioElement>(new Audio());
+    const [playing, setPlaying] = useState<boolean>(false);
 
-    useEffect(() => {
-        setSrcIndex(0);
-        setReady(false);
-    }, [srcs]);
+    const playSound = useCallback(
+        async (src: string) => {
+            audio.src = src;
+            await new Promise((resolve) => {
+                audio.addEventListener("canplaythrough", resolve);
+            });
+            audio.play();
+            return new Promise((resolve) => {
+                audio.addEventListener("ended", resolve);
+            });
+        },
+        [audio]
+    );
 
-    useEffect(() => {
-        function handleCanplaythrough() {
-            setReady(true);
-            if (isPlaying) {
-                audio.play();
+    const play = useCallback(async () => {
+        setPlaying(true);
+        for (let i = 0; i < srcs.length; i += 1) {
+            await playSound(srcs[i]);
+            if (i !== srcs.length - 1) {
+                await playSound("/sounds/chime.ogg");
             }
         }
+        setPlaying(false);
+    }, [playSound, srcs]);
 
-        const newSrc = srcs[srcIndex];
-        audio.src = newSrc;
-        audio.addEventListener("canplaythrough", handleCanplaythrough);
-
-        return () => {
-            audio.removeEventListener("canplaythrough", handleCanplaythrough);
-        };
-    }, [audio, isPlaying, srcIndex, srcs]);
-
-    const toggleState = useCallback(() => {
-        if (audio.paused) {
-            // play
-            audio.play();
-            audio.addEventListener("ended", () => {
-                const newSrcIndex = srcIndex + 1;
-                if (srcIndex <= srcs.length) {
-                    setSrcIndex(newSrcIndex);
-                }
-            });
-            setIsPlaying(true);
-        } else {
-            // pause
-            audio.pause();
-            setIsPlaying(false);
-        }
-    }, [audio, srcIndex, srcs.length]);
+    const pause = useCallback(() => {
+        audio.pause();
+        setPlaying(false);
+    }, [audio]);
 
     return {
-        ready,
-        paused: audio.paused,
-        toggleState
+        play,
+        pause,
+        playing
     };
 };
 

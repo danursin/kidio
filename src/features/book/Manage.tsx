@@ -79,9 +79,9 @@ const Manage: React.FC = () => {
                 }
             });
 
+            setLoading(false);
             const newID = (response as { id: number }).id;
             history.push(`/book/${newID}/manage`);
-            return;
         }
         setLoading(false);
     };
@@ -152,31 +152,6 @@ const Manage: React.FC = () => {
                 {!!book.cover_image_url && <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />}
             </Form>
 
-            <Button
-                type="button"
-                icon="plus circle"
-                content="Add Turn"
-                fluid
-                color="purple"
-                disabled={!!book.turns?.some((t) => !t.id)}
-                onClick={() => {
-                    const newTurn: Turn = {
-                        id: 0,
-                        book_id: +id,
-                        sort_order: 1,
-                        audio_file_key: ""
-                    };
-                    if (!book.turns) {
-                        book.turns = [newTurn];
-                    } else {
-                        book.turns.push({
-                            ...newTurn,
-                            sort_order: book.turns.length + 1
-                        });
-                    }
-                    setBook({ ...book });
-                }}
-            />
             {!!book.turns && (
                 <List>
                     {book.turns.map((t) => (
@@ -185,6 +160,34 @@ const Manage: React.FC = () => {
                         </List.Item>
                     ))}
                 </List>
+            )}
+
+            {!!book.id && (
+                <Button
+                    type="button"
+                    icon="plus circle"
+                    content="Add Turn"
+                    fluid
+                    color="purple"
+                    disabled={!!book.turns?.some((t) => !t.id)}
+                    onClick={() => {
+                        const newTurn: Turn = {
+                            id: 0,
+                            book_id: +id,
+                            sort_order: 1,
+                            audio_file_key: ""
+                        };
+                        if (!book.turns) {
+                            book.turns = [newTurn];
+                        } else {
+                            book.turns.push({
+                                ...newTurn,
+                                sort_order: book.turns.length + 1
+                            });
+                        }
+                        setBook({ ...book });
+                    }}
+                />
             )}
         </>
     );

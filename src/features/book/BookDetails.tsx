@@ -16,7 +16,7 @@ const BookDetails: React.FC = () => {
     const [book, setBook] = useState<Book>();
     const [error, setError] = useState<string>();
     const [srcs, setSrcs] = useState<string[]>();
-    const { toggleState, paused, ready } = useSound(srcs ?? []);
+    const { play, pause, playing } = useSound(srcs ?? []);
 
     const { query, _axios } = useDataservice();
 
@@ -55,12 +55,11 @@ const BookDetails: React.FC = () => {
                 <Header content={book.title} icon="book" color="pink" dividing />
                 <Button
                     size="massive"
-                    icon={paused ? "play" : "pause"}
-                    content={paused ? "Play" : "Pause"}
+                    icon={playing ? "pause" : "play"}
+                    content={playing ? "Pause" : "Play"}
                     color="teal"
-                    basic={!paused}
-                    disabled={!ready}
-                    onClick={toggleState}
+                    basic={playing}
+                    onClick={playing ? pause : play}
                 />
                 <Button size="massive" icon="pencil" content="Edit" as={Link} to={`/book/${id}/manage`} />
                 <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />
