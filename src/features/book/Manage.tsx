@@ -36,6 +36,7 @@ const Manage: React.FC = () => {
                 const [data] = await query<Book>({
                     table: "Book",
                     select: ["id", "title", "cover_image_url"],
+                    relations: ["turns"],
                     where: {
                         id: +id
                     }
@@ -148,7 +149,7 @@ const Manage: React.FC = () => {
 
                 <Form.Button type="submit" content="Save Book" icon="save" color="teal" fluid />
 
-                {!!book.cover_image_url && <Image size="medium" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />}
+                {!!book.cover_image_url && <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />}
             </Form>
 
             <Button
@@ -157,6 +158,7 @@ const Manage: React.FC = () => {
                 content="Add Turn"
                 fluid
                 color="purple"
+                disabled={!!book.turns?.some((t) => !t.id)}
                 onClick={() => {
                     const newTurn: Turn = {
                         id: 0,
@@ -178,7 +180,7 @@ const Manage: React.FC = () => {
             {!!book.turns && (
                 <List>
                     {book.turns.map((t) => (
-                        <List.Item key={t.sort_order}>
+                        <List.Item key={t.id}>
                             <TurnDetail turn={t} onDelete={onDelete} setTurn={onSetTurn} />
                         </List.Item>
                     ))}

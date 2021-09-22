@@ -1,6 +1,6 @@
+import { Form, Header } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 
-import { Form } from "semantic-ui-react";
 import { Turn } from "../../types";
 import useDataservice from "../../hooks/useDataService";
 
@@ -55,77 +55,57 @@ const TurnDetail: React.FC<TurnDetailProps> = ({ turn, onDelete, setTurn }) => {
 
     const onSubmit = async () => {
         setLoading(true);
-        const { id, sort_order, book_id } = localTurn;
         setLoading(true);
-        if (localTurn.id) {
-            // update
-            await update({
-                table: "Turn",
-                values: {
-                    sort_order
-                },
-                where: {
-                    id
+
+        if (tempAudio) {
+            const formData = new FormData();
+            formData.append("file", tempAudio.blob);
+            const {
+                data: { file_key }
+            } = await _axios.post<{ file_key: string }>("/file", formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
                 }
             });
-        } else {
+            localTurn.audio_file_key = file_key;
+        }
+
+        if (!localTurn.id) {
             // insert
             const response = await insert({
-                table: "Book",
+                table: "Turn",
                 values: {
-                    sort_order,
-                    book_id
+                    sort_order: localTurn.sort_order,
+                    book_id: localTurn.book_id,
+                    audio_file_key: localTurn.audio_file_key || null
                 }
             });
 
             const newID = (response as { id: number }).id;
             localTurn.id = newID;
-            setTurn(localTurn);
+        } else if (localTurn.audio_file_key !== turn.audio_file_key) {
+            // update
+            await update({
+                table: "Turn",
+                values: {
+                    audio_file_key: localTurn.audio_file_key
+                },
+                where: {
+                    id: localTurn.id
+                }
+            });
         }
-        setLoading(false);
-    };
 
-    const onSaveTempAudio = async () => {
-        if (!tempAudio) {
-            return;
-        }
-        const formData = new FormData();
-        formData.append("file", tempAudio.blob);
-        const {
-            data: { file_key }
-        } = await _axios.post<{ file_key: string }>("/file", formData, {
-            headers: {
-                "Content-Type": "multipart/form-data"
-            }
-        });
-
-        await update({
-            table: "Turn",
-            values: {
-                audio_file_key: file_key
-            },
-            where: {
-                id: localTurn.id
-            }
-        });
-
-        localTurn.audio_file_key = file_key;
         setTurn(localTurn);
+        setLoading(false);
         setTempAudio(undefined);
     };
 
     return (
         <Form unstackable onSubmit={onSubmit} loading={loading}>
+            <Header content={localTurn.audio_file_key || "No audio file key yet"} size="small" color="grey" textAlign="right" />
             <Form.Group>
-                <Form.Input
-                    type="number"
-                    width="12"
-                    value={localTurn.sort_order}
-                    fluid
-                    label="Sort Order"
-                    placeholder="Turn Sort Order"
-                    onChange={(e, { value }) => setLocalTurn({ ...localTurn, sort_order: +value })}
-                />
+                <Form.Input width="12" value={localTurn.sort_order} fluid readOnly label="Sort Order" placeholder="Turn Sort Order" />
                 <Form.Button type="button" label="&nbsp;" width="4" icon="trash" color="red" onClick={() => onDelete(turn)} fluid />
             </Form.Group>
 
@@ -153,14 +133,11 @@ const TurnDetail: React.FC<TurnDetailProps> = ({ turn, onDelete, setTurn }) => {
                     disabled={recorder?.state !== "recording"}
                 />
             </Form.Group>
-            {!!tempAudio && (
-                <>
-                    <audio controls src={tempAudio.objectURL}></audio>
-                    <Form.Button type="button" content="Save Audio" icon="audio" onClick={onSaveTempAudio} />
-                </>
+            {!!tempAudio && <audio controls src={tempAudio.objectURL}></audio>}
+            {!!localTurn.audio_file_key && (
+                <audio controls src={`${_axios.defaults.baseURL}/file?file_key=${localTurn.audio_file_key}`}></audio>
             )}
-
-            <Form.Button type="submit" content="Save Turn" icon="save" color="teal" fluid />
+            <Form.Button type="submit" content="Save Turn" icon="save" color="teal" fluid disabled={!tempAudio} />
         </Form>
     );
 };
