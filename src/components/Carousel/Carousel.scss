@@ -1,0 +1,17 @@
+ul.carousel {
+    overflow-x: scroll;
+    overflow-y: hidden;
+    white-space: nowrap;
+    list-style: none;
+    padding-left: 0;
+
+
+    li {
+        display: inline-block;
+        img {
+            height: 12rem;
+            vertical-align: top;
+            margin: 1rem 1rem 1rem 0;
+        }
+    }
+}

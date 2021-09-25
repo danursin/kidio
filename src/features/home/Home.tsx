@@ -25,8 +25,7 @@ const Home: React.FC = () => {
 
         mediaRecorder.addEventListener("stop", async () => {
             const blob = new Blob(recordedChunks);
-
-            setTurn({ ...turn, audio_file_key: URL.createObjectURL(new Blob(recordedChunks)) });
+            setTurn({ ...turn, audio_file_key: URL.createObjectURL(blob) });
         });
 
         mediaRecorder.start();

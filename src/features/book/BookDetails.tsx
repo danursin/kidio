@@ -2,6 +2,7 @@ import { Button, Grid, Header, Image, Message } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 
 import { Book } from "../../types";
+import { Carousel } from "../../components/Carousel";
 import { Link } from "react-router-dom";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
 import axios from "axios";
@@ -19,6 +20,25 @@ const BookDetails: React.FC = () => {
     const { play, pause, playing } = useSound(srcs ?? []);
 
     const { query, _axios } = useDataservice();
+
+    useEffect(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let wakeLock: any;
+        (async () => {
+            try {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                wakeLock = await (navigator as any).wakeLock.request("screen");
+            } catch (err) {
+                console.log("No wakelock available");
+            }
+        })();
+
+        return () => {
+            if (wakeLock) {
+                wakeLock.release();
+            }
+        };
+    }, []);
 
     useEffect(() => {
         (async () => {
@@ -51,19 +71,26 @@ const BookDetails: React.FC = () => {
     }
     return (
         <Grid>
-            <Grid.Column textAlign="center">
-                <Header content={book.title} icon="book" color="pink" dividing />
-                <Button
-                    size="massive"
-                    icon={playing ? "pause" : "play"}
-                    content={playing ? "Pause" : "Play"}
-                    color="teal"
-                    basic={playing}
-                    onClick={playing ? pause : play}
-                />
-                <Button size="massive" icon="pencil" content="Edit" as={Link} to={`/book/${id}/manage`} />
-                <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />
-            </Grid.Column>
+            <Grid.Row>
+                <Grid.Column textAlign="center">
+                    <Header content={book.title} icon="book" color="pink" dividing />
+                    <Button
+                        size="massive"
+                        icon={playing ? "pause" : "play"}
+                        content={playing ? "Pause" : "Play"}
+                        color="teal"
+                        basic={playing}
+                        onClick={playing ? pause : play}
+                    />
+                    <Button size="massive" icon="pencil" content="Edit" as={Link} to={`/book/${id}/manage`} />
+                    <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />
+                </Grid.Column>
+            </Grid.Row>
+            <Grid.Row>
+                <Grid.Column>
+                    <Carousel />
+                </Grid.Column>
+            </Grid.Row>
         </Grid>
     );
 };

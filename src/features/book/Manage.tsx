@@ -3,6 +3,7 @@ import { Button, Form, Header, Image, List, Message } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 
+import { Link } from "react-router-dom";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
 import TurnDetail from "./TurnDetail";
 import axios from "axios";
@@ -149,7 +150,9 @@ const Manage: React.FC = () => {
 
                 <Form.Button type="submit" content="Save Book" icon="save" color="teal" fluid />
 
-                {!!book.cover_image_url && <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />}
+                {!!book.cover_image_url && (
+                    <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} as={Link} to={`/book/${id}`} />
+                )}
             </Form>
 
             {!!book.turns && (

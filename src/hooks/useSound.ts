@@ -29,7 +29,7 @@ const useSound = (srcs: string[]): UseSoundOutput => {
         for (let i = 0; i < srcs.length; i += 1) {
             await playSound(srcs[i]);
             if (i !== srcs.length - 1) {
-                await playSound("/sounds/chime.ogg");
+                await playSound("/sounds/bell.mp3");
             }
         }
         setPlaying(false);
