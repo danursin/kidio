@@ -1,14 +1,27 @@
 import "semantic-ui-css/semantic.min.css";
 import "./style/site.scss";
 
+import { Grid, Message } from "semantic-ui-react";
+
 import AppRoutes from "./AppRoutes";
-import { Grid } from "semantic-ui-react";
 import History from "./services/History";
 import Navbar from "./components/Navbar";
 import React from "react";
 import { Router } from "react-router";
+import SimplePlaceholder from "./components/SimplePlaceholder";
+import { useAuth0 } from "@auth0/auth0-react";
 
 const App: React.FC = () => {
+    const { isLoading, error } = useAuth0();
+
+    if (isLoading) {
+        return <SimplePlaceholder />;
+    }
+
+    if (error) {
+        return <Message content={error.message} error icon="exclamation triangle" />;
+    }
+
     return (
         <Router history={History}>
             <Navbar />

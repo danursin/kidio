@@ -2,6 +2,7 @@ import React, { Suspense, lazy } from "react";
 import { Redirect, Route, Switch } from "react-router-dom";
 
 import Home from "./features/home/Home";
+import PrivateRoute from "./components/PrivateRoute";
 import SimplePlaceholder from "./components/SimplePlaceholder";
 
 const BookDetails = lazy(() => import("./features/book/BookDetails"));
@@ -12,9 +13,9 @@ const AppRoutes: React.FC = () => {
     return (
         <Suspense fallback={<SimplePlaceholder />}>
             <Switch>
-                <Route path="/book" exact component={BookList} />
-                <Route path="/book/:id" exact component={BookDetails} />
-                <Route path="/book/:id/manage" exact component={BookManagement} />
+                <PrivateRoute path="/book" exact component={BookList} />
+                <PrivateRoute path="/book/:id" exact component={BookDetails} />
+                <PrivateRoute path="/book/:id/manage" exact component={BookManagement} />
                 <Route path="/home" component={Home} />
                 <Redirect to="/book" />
             </Switch>

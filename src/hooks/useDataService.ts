@@ -1,6 +1,7 @@
 import axios, { AxiosInstance } from "axios";
+import { useCallback, useState } from "react";
 
-import { useCallback } from "react";
+import { useAuth0 } from "@auth0/auth0-react";
 
 export interface UseDataServiceOutput {
     _axios: AxiosInstance;
@@ -10,31 +11,67 @@ export interface UseDataServiceOutput {
     update(request: UpdateRequest): Promise<unknown>;
 }
 
-const _axios = axios.create({
-    //baseURL: "http://localhost:2500/kidio"
-    baseURL: "https://cookoff-2020-api.herokuapp.com/kidio"
-});
-
 const useDataservice = (): UseDataServiceOutput => {
-    const destroy = useCallback(async (request: DestroyRequest): Promise<unknown> => {
-        const { data } = await _axios.post("/destroy", request);
-        return data;
-    }, []);
+    const [_axios] = useState<AxiosInstance>(
+        axios.create({
+            //baseURL: "http://localhost:2500/kidio"
+            baseURL: "https://cookoff-2020-api.herokuapp.com/kidio"
+        })
+    );
 
-    const insert = useCallback(async (request: InsertRequest): Promise<unknown> => {
-        const { data } = await _axios.post("/insert", request);
-        return data;
-    }, []);
+    const { getAccessTokenSilently } = useAuth0();
 
-    const query = useCallback(async <T = unknown>(request: QueryRequest): Promise<T[]> => {
-        const { data } = await _axios.post<T[]>("/query", request);
-        return data;
-    }, []);
+    const destroy = useCallback(
+        async (request: DestroyRequest): Promise<unknown> => {
+            const token = await getAccessTokenSilently();
+            const { data } = await _axios.post("/destroy", request, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return data;
+        },
+        [_axios, getAccessTokenSilently]
+    );
 
-    const update = useCallback(async (request: UpdateRequest): Promise<unknown> => {
-        const { data } = await _axios.post("/update", request);
-        return data;
-    }, []);
+    const insert = useCallback(
+        async (request: InsertRequest): Promise<unknown> => {
+            const token = await getAccessTokenSilently();
+            const { data } = await _axios.post("/insert", request, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return data;
+        },
+        [_axios, getAccessTokenSilently]
+    );
+
+    const query = useCallback(
+        async <T = unknown>(request: QueryRequest): Promise<T[]> => {
+            const token = await getAccessTokenSilently();
+            const { data } = await _axios.post<T[]>("/query", request, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return data;
+        },
+        [_axios, getAccessTokenSilently]
+    );
+
+    const update = useCallback(
+        async (request: UpdateRequest): Promise<unknown> => {
+            const token = await getAccessTokenSilently();
+            const { data } = await _axios.post("/update", request, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            return data;
+        },
+        [_axios, getAccessTokenSilently]
+    );
 
     return { _axios, destroy, insert, query, update };
 };
