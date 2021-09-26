@@ -1,7 +1,7 @@
 import axios, { AxiosInstance } from "axios";
-import { useCallback, useState } from "react";
 
 import { useAuth0 } from "@auth0/auth0-react";
+import { useCallback } from "react";
 
 export interface UseDataServiceOutput {
     _axios: AxiosInstance;
@@ -11,14 +11,12 @@ export interface UseDataServiceOutput {
     update(request: UpdateRequest): Promise<unknown>;
 }
 
-const useDataservice = (): UseDataServiceOutput => {
-    const [_axios] = useState<AxiosInstance>(
-        axios.create({
-            //baseURL: "http://localhost:2500/kidio"
-            baseURL: "https://cookoff-2020-api.herokuapp.com/kidio"
-        })
-    );
+const _axios = axios.create({
+    //baseURL: "http://localhost:2500/kidio"
+    baseURL: "https://cookoff-2020-api.herokuapp.com/kidio"
+});
 
+const useDataservice = (): UseDataServiceOutput => {
     const { getAccessTokenSilently } = useAuth0();
 
     const destroy = useCallback(
@@ -31,7 +29,7 @@ const useDataservice = (): UseDataServiceOutput => {
             });
             return data;
         },
-        [_axios, getAccessTokenSilently]
+        [getAccessTokenSilently]
     );
 
     const insert = useCallback(
@@ -44,7 +42,7 @@ const useDataservice = (): UseDataServiceOutput => {
             });
             return data;
         },
-        [_axios, getAccessTokenSilently]
+        [getAccessTokenSilently]
     );
 
     const query = useCallback(
@@ -57,7 +55,7 @@ const useDataservice = (): UseDataServiceOutput => {
             });
             return data;
         },
-        [_axios, getAccessTokenSilently]
+        [getAccessTokenSilently]
     );
 
     const update = useCallback(
@@ -70,7 +68,7 @@ const useDataservice = (): UseDataServiceOutput => {
             });
             return data;
         },
-        [_axios, getAccessTokenSilently]
+        [getAccessTokenSilently]
     );
 
     return { _axios, destroy, insert, query, update };
