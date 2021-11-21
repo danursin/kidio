@@ -1,23 +1,30 @@
-import { Book, Turn } from "../../types";
-import { Button, Form, Header, Image, List, Message } from "semantic-ui-react";
+import { Form, Header, Image, Message } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 
+import { Book } from "../../types";
 import { Link } from "react-router-dom";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
-import TurnDetail from "./TurnDetail";
 import axios from "axios";
 import useDataservice from "../../hooks/useDataService";
 
+interface TempAudio {
+    blob: Blob;
+    objectURL: string;
+}
+
 const Manage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
-
+    const [recorder, setRecorder] = useState<MediaRecorder>();
+    const [tempAudio, setTempAudio] = useState<TempAudio>();
+    const [src, setSrc] = useState<string>();
     const [book, setBook] = useState<Book | undefined>(() => {
         if (id === "new") {
             return {
                 id: 0,
                 title: "",
-                cover_image_url: ""
+                cover_image_url: "",
+                audio_file_key: null
             };
         }
     });
@@ -25,7 +32,7 @@ const Manage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const history = useHistory();
 
-    const { query, destroy, insert, update } = useDataservice();
+    const { query, insert, update, getAudioUri, putAudioFile } = useDataservice();
 
     useEffect(() => {
         if (id === "new") {
@@ -43,6 +50,10 @@ const Manage: React.FC = () => {
                     }
                 });
 
+                if (data.audio_file_key) {
+                    const dataUri = await getAudioUri(data.audio_file_key);
+                    setSrc(dataUri);
+                }
                 setBook(data);
             } catch (err) {
                 if (axios.isAxiosError(err)) {
@@ -50,9 +61,9 @@ const Manage: React.FC = () => {
                 }
             }
         })();
-    }, [query, id]);
+    }, [query, id, getAudioUri]);
 
-    const onSubmit = async () => {
+    const onDetailSubmit = async () => {
         if (!book) {
             return;
         }
@@ -87,39 +98,55 @@ const Manage: React.FC = () => {
         setLoading(false);
     };
 
-    const onDelete = async (turn: Turn) => {
-        if (!book?.turns) {
+    const onAudioSubmit = async () => {
+        if (!tempAudio || !book) {
             return;
         }
+        setLoading(true);
 
-        if (!window.confirm("Delete this turn?")) {
-            return;
+        if (tempAudio) {
+            book.audio_file_key = await putAudioFile(tempAudio.blob);
         }
 
-        const existingIndex = book.turns.findIndex((t) => t === turn);
-        book.turns.splice(existingIndex, 1);
-
-        setBook({ ...book });
-
-        if (!turn.id) {
-            // for a new one only in memory
-            return;
-        }
-        await destroy({
-            table: "Turn",
+        await update({
+            table: "Book",
+            values: {
+                audio_file_key: book.audio_file_key
+            },
             where: {
-                id: turn.id
+                id: id
             }
         });
+
+        setLoading(false);
+        setTempAudio(undefined);
     };
 
-    const onSetTurn = (localTurn: Turn) => {
-        if (!book?.turns) {
-            return;
+    const startRecording = async () => {
+        const audioStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
+        const mediaRecorder = new MediaRecorder(audioStream, { mimeType: "audio/webm" });
+        const recordedChunks: BlobPart[] = [];
+        mediaRecorder.addEventListener("dataavailable", (e) => {
+            if (e.data.size > 0) {
+                recordedChunks.push(e.data);
+            }
+        });
+
+        mediaRecorder.addEventListener("stop", async () => {
+            const blob = new Blob(recordedChunks);
+            const objectURL = URL.createObjectURL(blob);
+            setTempAudio({ blob, objectURL });
+        });
+
+        mediaRecorder.start();
+
+        setRecorder(mediaRecorder);
+    };
+
+    const stopRecording = () => {
+        if (recorder && recorder.state === "recording") {
+            recorder.stop();
         }
-        const existingIndex = book.turns.findIndex((t) => t.sort_order === localTurn.sort_order);
-        book.turns[existingIndex] = localTurn;
-        setBook({ ...book, turns: [...book.turns] });
     };
 
     if (!book) {
@@ -128,7 +155,7 @@ const Manage: React.FC = () => {
 
     return (
         <>
-            <Form onSubmit={onSubmit} error={!!error} loading={loading}>
+            <Form onSubmit={onDetailSubmit} error={!!error} loading={loading}>
                 <Header content={book.title || "New Book"} subheader={`Book ID ${book.id || "NEW"}`} />
                 <Message content={error} icon="exclamation triangle" error />
                 <Form.Input
@@ -155,42 +182,38 @@ const Manage: React.FC = () => {
                 )}
             </Form>
 
-            {!!book.turns && (
-                <List>
-                    {book.turns.map((t) => (
-                        <List.Item key={t.id}>
-                            <TurnDetail turn={t} onDelete={onDelete} setTurn={onSetTurn} />
-                        </List.Item>
-                    ))}
-                </List>
-            )}
-
             {!!book.id && (
-                <Button
-                    type="button"
-                    icon="plus circle"
-                    content="Add Turn"
-                    fluid
-                    color="purple"
-                    disabled={!!book.turns?.some((t) => !t.id)}
-                    onClick={() => {
-                        const newTurn: Turn = {
-                            id: 0,
-                            book_id: +id,
-                            sort_order: 1,
-                            audio_file_key: ""
-                        };
-                        if (!book.turns) {
-                            book.turns = [newTurn];
-                        } else {
-                            book.turns.push({
-                                ...newTurn,
-                                sort_order: book.turns.length + 1
-                            });
-                        }
-                        setBook({ ...book });
-                    }}
-                />
+                <Form unstackable onSubmit={onAudioSubmit} loading={loading}>
+                    <Header content={book.audio_file_key || "No audio file key yet"} size="small" color="grey" textAlign="right" />
+
+                    <Form.Group>
+                        <Form.Button
+                            type="button"
+                            onClick={startRecording}
+                            content="Record"
+                            icon="record"
+                            width="8"
+                            basic
+                            color="grey"
+                            fluid
+                            disabled={recorder?.state === "recording"}
+                        />
+                        <Form.Button
+                            type="button"
+                            onClick={stopRecording}
+                            content="Stop"
+                            icon="stop"
+                            width="8"
+                            basic
+                            color="red"
+                            fluid
+                            disabled={recorder?.state !== "recording"}
+                        />
+                    </Form.Group>
+                    {!!tempAudio && <audio controls src={tempAudio.objectURL}></audio>}
+                    {!!src && <audio controls src={src}></audio>}
+                    <Form.Button type="submit" content="Save Audio" icon="save" color="teal" fluid disabled={!tempAudio} />
+                </Form>
             )}
         </>
     );

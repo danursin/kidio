@@ -15,11 +15,11 @@ const BookDetails: React.FC = () => {
     const bookId = +id;
 
     const [book, setBook] = useState<Book>();
+    const [src, setSrc] = useState<string>();
     const [error, setError] = useState<string>();
-    const [srcs, setSrcs] = useState<string[]>();
-    const { play, pause, playing } = useSound(srcs ?? []);
+    const { play, pause, playing } = useSound(src ?? "");
 
-    const { query, _axios } = useDataservice();
+    const { query, getAudioUri } = useDataservice();
 
     useEffect(() => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -45,22 +45,25 @@ const BookDetails: React.FC = () => {
             try {
                 const [data] = await query<Book>({
                     table: "Book",
-                    select: ["id", "title", "cover_image_url"],
+                    select: ["id", "title", "cover_image_url", "audio_file_key"],
                     relations: ["turns"],
                     where: {
                         id: bookId
                     }
                 });
 
+                if (data.audio_file_key) {
+                    const dataUri = await getAudioUri(data.audio_file_key);
+                    setSrc(dataUri);
+                }
                 setBook(data);
-                setSrcs(data.turns?.map((t) => `${_axios.defaults.baseURL}/file?file_key=${t.audio_file_key}`));
             } catch (err) {
                 if (axios.isAxiosError(err)) {
                     setError(err.response?.data || "Something unexpected happened");
                 }
             }
         })();
-    }, [query, bookId, _axios.defaults.baseURL]);
+    }, [query, bookId, getAudioUri]);
 
     if (error) {
         return <Message content={error} icon="exclamation triangle" error />;
@@ -76,6 +79,7 @@ const BookDetails: React.FC = () => {
                     <Header content={book.title} icon="book" color="pink" dividing />
                     <Button
                         size="massive"
+                        disabled={!src}
                         icon={playing ? "pause" : "play"}
                         content={playing ? "Pause" : "Play"}
                         color="teal"

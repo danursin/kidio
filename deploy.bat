@@ -1,4 +1,4 @@
-set profile=dursin_personal
+set profile=personal
 set bucket=kidio-web
 set distribution_id=E3Q9IFD725OZ4O
 
