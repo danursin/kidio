@@ -4,20 +4,18 @@ import React, { useEffect, useState } from "react";
 import { Book } from "../../types";
 import { Carousel } from "../../components/Carousel";
 import { Link } from "react-router-dom";
+import Playback from "../../components/Playback";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
 import axios from "axios";
 import useDataservice from "../../hooks/useDataService";
 import { useParams } from "react-router";
-import useSound from "../../hooks/useSound";
 
 const BookDetails: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const bookId = +id;
 
     const [book, setBook] = useState<Book>();
-    const [src, setSrc] = useState<string>();
     const [error, setError] = useState<string>();
-    const { play, pause, playing } = useSound(src ?? "");
 
     const { query, getAudioUri } = useDataservice();
 
@@ -52,10 +50,6 @@ const BookDetails: React.FC = () => {
                     }
                 });
 
-                if (data.audio_file_key) {
-                    const dataUri = await getAudioUri(data.audio_file_key);
-                    setSrc(dataUri);
-                }
                 setBook(data);
             } catch (err) {
                 if (axios.isAxiosError(err)) {
@@ -77,15 +71,7 @@ const BookDetails: React.FC = () => {
             <Grid.Row>
                 <Grid.Column textAlign="center">
                     <Header content={book.title} icon="book" color="pink" dividing />
-                    <Button
-                        size="massive"
-                        disabled={!src}
-                        icon={playing ? "pause" : "play"}
-                        content={playing ? "Pause" : "Play"}
-                        color="teal"
-                        basic={playing}
-                        onClick={playing ? pause : play}
-                    />
+                    <Playback audio_file_key={book.audio_file_key} turns={book.turns} />
                     <Button size="massive" icon="pencil" content="Edit" as={Link} to={`/book/${id}/manage`} />
                     <Image size="large" centered src={book.cover_image_url} style={{ marginTop: "1rem" }} />
                 </Grid.Column>

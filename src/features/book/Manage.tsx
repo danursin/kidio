@@ -1,4 +1,4 @@
-import { Form, Header, Image, Message } from "semantic-ui-react";
+import { Form, Header, Image, List, Message } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 import { useHistory, useParams } from "react-router";
 
@@ -6,6 +6,7 @@ import { Book } from "../../types";
 import { Link } from "react-router-dom";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
 import axios from "axios";
+import duration from "humanize-duration";
 import useDataservice from "../../hooks/useDataService";
 
 interface TempAudio {
@@ -17,6 +18,8 @@ const Manage: React.FC = () => {
     const { id } = useParams<{ id: string }>();
     const [recorder, setRecorder] = useState<MediaRecorder>();
     const [tempAudio, setTempAudio] = useState<TempAudio>();
+    const [recordStartTime, setRecordStartTime] = useState<number>(+new Date());
+    const [turnTimes, setTurnTimes] = useState<number[]>([]);
     const [src, setSrc] = useState<string>();
     const [book, setBook] = useState<Book | undefined>(() => {
         if (id === "new") {
@@ -32,7 +35,7 @@ const Manage: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(false);
     const history = useHistory();
 
-    const { query, insert, update, getAudioUri, putAudioFile } = useDataservice();
+    const { query, insert, update, destroy, getAudioUri, putAudioFile } = useDataservice();
 
     useEffect(() => {
         if (id === "new") {
@@ -108,15 +111,33 @@ const Manage: React.FC = () => {
             book.audio_file_key = await putAudioFile(tempAudio.blob);
         }
 
-        await update({
-            table: "Book",
-            values: {
-                audio_file_key: book.audio_file_key
-            },
+        await destroy({
+            table: "Turn",
             where: {
-                id: id
+                book_id: id
             }
         });
+
+        await Promise.all([
+            update({
+                table: "Book",
+                values: {
+                    audio_file_key: book.audio_file_key
+                },
+                where: {
+                    id: id
+                }
+            }),
+            turnTimes.length
+                ? insert({
+                      table: "Turn",
+                      values: turnTimes.map((t) => ({
+                          time: t,
+                          book_id: id
+                      }))
+                  })
+                : undefined
+        ]);
 
         setLoading(false);
         setTempAudio(undefined);
@@ -139,7 +160,7 @@ const Manage: React.FC = () => {
         });
 
         mediaRecorder.start();
-
+        setRecordStartTime(+new Date());
         setRecorder(mediaRecorder);
     };
 
@@ -152,6 +173,14 @@ const Manage: React.FC = () => {
     if (!book) {
         return <SimplePlaceholder />;
     }
+
+    const addTurn = () => {
+        setTurnTimes((times) => {
+            const now = +new Date();
+            const time = now - recordStartTime;
+            return [...times, time];
+        });
+    };
 
     return (
         <>
@@ -210,6 +239,17 @@ const Manage: React.FC = () => {
                             disabled={recorder?.state !== "recording"}
                         />
                     </Form.Group>
+
+                    <Form.Group widths="equal">
+                        <Form.Button type="button" content="Add Page Turn" icon="bookmark" fluid color="purple" onClick={addTurn} />
+                    </Form.Group>
+
+                    <List divided>
+                        {turnTimes.map((t, index) => (
+                            <List.Item key={t} description={`Turn ${index + 1}`} content={duration(t, { round: true })} />
+                        ))}
+                    </List>
+
                     {!!tempAudio && <audio controls src={tempAudio.objectURL}></audio>}
                     {!!src && <audio controls src={src}></audio>}
                     <Form.Button type="submit" content="Save Audio" icon="save" color="teal" fluid disabled={!tempAudio} />
