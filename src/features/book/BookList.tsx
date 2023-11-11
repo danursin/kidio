@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import { Book } from "../../types";
 import { Link } from "react-router-dom";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
-import axios from "axios";
 import useDataservice from "../../hooks/useDataService";
 
 const BookList: React.FC = () => {
@@ -22,9 +21,7 @@ const BookList: React.FC = () => {
                 });
                 setBooks(data);
             } catch (err) {
-                if (axios.isAxiosError(err)) {
-                    setError(err.response?.data || "Something unexpected happened");
-                }
+                setError("Something unexpected happened");
             }
         })();
     }, [query]);

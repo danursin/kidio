@@ -6,12 +6,11 @@ import { Carousel } from "../../components/Carousel";
 import { Link } from "react-router-dom";
 import Playback from "../../components/Playback";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
-import axios from "axios";
 import useDataservice from "../../hooks/useDataService";
 import { useParams } from "react-router";
 
 const BookDetails: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id = "" } = useParams<{ id: string }>();
     const bookId = +id;
 
     const [book, setBook] = useState<Book>();
@@ -52,9 +51,7 @@ const BookDetails: React.FC = () => {
 
                 setBook(data);
             } catch (err) {
-                if (axios.isAxiosError(err)) {
-                    setError(err.response?.data || "Something unexpected happened");
-                }
+                setError("Something unexpected happened");
             }
         })();
     }, [query, bookId, getAudioUri]);
