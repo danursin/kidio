@@ -1,0 +1,154 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+
+Globals:
+    Function:
+        Runtime: nodejs20.x
+        MemorySize: 128
+        Timeout: 30
+
+Resources:
+    KidioDynamodb:
+        Type: AWS::DynamoDB::Table
+        Properties:
+            TableName: kidio
+            BillingMode: PAY_PER_REQUEST
+            AttributeDefinitions:
+                - AttributeName: PK
+                  AttributeType: S
+                - AttributeName: SK
+                  AttributeType: S
+            KeySchema:
+                - AttributeName: PK
+                  KeyType: HASH
+                - AttributeName: SK
+                  KeyType: RANGE
+
+    FunctionExecutionRole:
+        Type: AWS::IAM::Role
+        Properties:
+            RoleName: KidioFunctionExecutionRole
+            AssumeRolePolicyDocument:
+                Version: "2012-10-17"
+                Statement:
+                    - Effect: Allow
+                      Principal:
+                          Service:
+                              - lambda.amazonaws.com
+                      Action:
+                          - sts:AssumeRole
+            Policies:
+                - PolicyName: KidioFunctionExecutionPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - dynamodb:*
+                            Resource: "*"
+                - PolicyName: CloudWatchLogsPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - logs:CreateLogGroup
+                                - logs:CreateLogStream
+                                - logs:PutLogEvents
+                            Resource: "arn:aws:logs:*:*:*"
+                - PolicyName: S3AccessPolicy
+                  PolicyDocument:
+                      Version: "2012-10-17"
+                      Statement:
+                          - Effect: Allow
+                            Action:
+                                - s3:GetObject
+                                - s3:PutObject
+                            Resource: "arn:aws:s3:::kidio-audio/*"
+
+    KidioApi:
+        Type: AWS::Serverless::HttpApi
+        Properties:
+            CorsConfiguration:
+                AllowMethods:
+                    - GET
+                    - POST
+                AllowHeaders:
+                    - Content-Type
+                    - Authorization
+                AllowOrigins:
+                    - "*"
+                MaxAge: 300
+            Auth:
+                DefaultAuthorizer: JWTAuthorizer
+                Authorizers:
+                    JWTAuthorizer:
+                        IdentitySource: $request.header.Authorization
+                        JwtConfiguration:
+                            issuer: https://esiotrot.us.auth0.com/
+                            audience:
+                                - https://api.esiotrot.com
+
+    ListBooksFunction:
+        Type: AWS::Serverless::Function
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Sourcemaps: false
+                Target: "es2020"
+                EntryPoints:
+                    - "aws-sam/handlers/list-books.ts"
+        Properties:
+            CodeUri: ./
+            Handler: list-books.handler
+            Role: !GetAtt FunctionExecutionRole.Arn
+            Events:
+                GetListBooks:
+                    Type: HttpApi
+                    Properties:
+                        ApiId: !Ref KidioApi
+                        Path: /book
+                        Method: GET
+    GetBookFunction:
+        Type: AWS::Serverless::Function
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Sourcemaps: false
+                Target: "es2020"
+                EntryPoints:
+                    - "aws-sam/handlers/get-book.ts"
+        Properties:
+            CodeUri: ./
+            Handler: get-book.handler
+            Role: !GetAtt FunctionExecutionRole.Arn
+            Events:
+                GetBook:
+                    Type: HttpApi
+                    Properties:
+                        ApiId: !Ref KidioApi
+                        Path: /book/{id}
+                        Method: GET
+    GetAudioFileFunction:
+        Type: AWS::Serverless::Function
+        Metadata:
+            BuildMethod: esbuild
+            BuildProperties:
+                Minify: true
+                Sourcemaps: false
+                Target: "es2020"
+                EntryPoints:
+                    - "aws-sam/handlers/get-file.ts"
+        Properties:
+            CodeUri: ./
+            Handler: get-file.handler
+            Role: !GetAtt FunctionExecutionRole.Arn
+            Events:
+                GetAudioFile:
+                    Type: HttpApi
+                    Properties:
+                        ApiId: !Ref KidioApi
+                        Path: /file/{id}
+                        Method: GET

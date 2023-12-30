@@ -1,5 +1,3 @@
-import { AppState, Auth0Provider } from "@auth0/auth0-react";
-
 import App from "./App";
 import Auth0ProviderWithHistory from "./components/Auth0ProviderWithHistory";
 import { BrowserRouter } from "react-router-dom";

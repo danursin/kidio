@@ -1,0 +1,9 @@
+version = 0.1
+[default.deploy.parameters]
+stack_name = "kidio"
+resolve_s3 = true
+s3_prefix = "kidio"
+region = "us-east-1"
+capabilities = "CAPABILITY_NAMED_IAM"
+disable_rollback = true
+image_repositories = []

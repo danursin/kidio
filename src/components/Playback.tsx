@@ -1,12 +1,11 @@
 import React, { useCallback, useEffect, useState } from "react";
 
 import { Button } from "semantic-ui-react";
-import { Turn } from "../types";
 import useDataservice from "../hooks/useDataService";
 
 interface PlaybackProps {
     audio_file_key: string | null;
-    turns?: Turn[];
+    turns?: number[];
 }
 
 const turnSrc = "/sounds/bell.mp3";
@@ -48,7 +47,7 @@ const Playback: React.FC<PlaybackProps> = ({ audio_file_key, turns }) => {
         const interval = setInterval(async () => {
             const currentTurn = turns[turnIndex];
             const audioTimeMs = mainAudio.currentTime * 1000;
-            if (currentTurn && audioTimeMs >= currentTurn.time) {
+            if (currentTurn && audioTimeMs >= currentTurn) {
                 clearInterval(interval);
                 mainAudio.pause();
                 setTurnIndex((current) => current + 1);

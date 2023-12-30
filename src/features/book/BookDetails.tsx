@@ -1,30 +1,30 @@
 import { Button, Grid, Header, Image, Message } from "semantic-ui-react";
 import React, { useEffect, useState } from "react";
 
-import { Book } from "../../types";
+import { BookItem } from "../../types";
 import { Carousel } from "../../components/Carousel";
 import { Link } from "react-router-dom";
 import Playback from "../../components/Playback";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
+import config from "../../config";
+import { useAuth0 } from "@auth0/auth0-react";
 import useDataservice from "../../hooks/useDataService";
 import { useParams } from "react-router";
 
 const BookDetails: React.FC = () => {
     const { id = "" } = useParams<{ id: string }>();
-    const bookId = +id;
 
-    const [book, setBook] = useState<Book>();
+    const [book, setBook] = useState<BookItem>();
     const [error, setError] = useState<string>();
 
     const { query, getAudioUri } = useDataservice();
+    const { getAccessTokenSilently } = useAuth0();
 
     useEffect(() => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let wakeLock: any;
+        let wakeLock: WakeLockSentinel;
         (async () => {
             try {
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                wakeLock = await (navigator as any).wakeLock.request("screen");
+                wakeLock = await navigator.wakeLock.request("screen");
             } catch (err) {
                 console.log("No wakelock available");
             }
@@ -40,21 +40,24 @@ const BookDetails: React.FC = () => {
     useEffect(() => {
         (async () => {
             try {
-                const [data] = await query<Book>({
-                    table: "Book",
-                    select: ["id", "title", "cover_image_url", "audio_file_key"],
-                    relations: ["turns"],
-                    where: {
-                        id: bookId
+                const token = await getAccessTokenSilently();
+                const url = `${config.apiBaseUrl}/book/${id}`;
+                const response = await fetch(url, {
+                    method: "GET",
+                    headers: {
+                        Authorization: `Bearer ${token}`
                     }
                 });
-
+                if (!response.ok) {
+                    throw new Error(await response.text());
+                }
+                const data = (await response.json()) as BookItem;
                 setBook(data);
             } catch (err) {
                 setError("Something unexpected happened");
             }
         })();
-    }, [query, bookId, getAudioUri]);
+    }, [query, id]);
 
     if (error) {
         return <Message content={error} icon="exclamation triangle" error />;

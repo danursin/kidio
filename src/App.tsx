@@ -29,11 +29,12 @@ const App: React.FC = () => {
         <Suspense fallback={<SimplePlaceholder />}>
             <Routes>
                 <Route path="/" element={<PrivateRoute component={Layout} />}>
-                    <Route path="book" element={<BookList />} />
-                    <Route path="book/:id" element={<BookDetails />} />
+                    <Route path="/" element={<BookList />} />
+                    <Route path="/book" element={<BookList />} />
+                    <Route path="/book/:id" element={<BookDetails />} />
                     <Route path="book/:id/manage" element={<BookManagement />} />
+                    <Route path="*" element={<Navigate to="/book" replace />} />
                 </Route>
-                <Route path="*" element={<Navigate to="/" />} />
             </Routes>
         </Suspense>
     );

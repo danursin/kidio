@@ -2,7 +2,7 @@ import { Form, Header, Image, List, Message } from "semantic-ui-react";
 import { Link, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
 
-import { Book } from "../../types";
+import { BookItem } from "../../types";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
 import duration from "humanize-duration";
 import useDataservice from "../../hooks/useDataService";
@@ -20,13 +20,14 @@ const Manage: React.FC = () => {
     const [recordStartTime, setRecordStartTime] = useState<number>(+new Date());
     const [turnTimes, setTurnTimes] = useState<number[]>([]);
     const [src, setSrc] = useState<string>();
-    const [book, setBook] = useState<Book | undefined>(() => {
+    const [book, setBook] = useState<BookItem | undefined>(() => {
         if (id === "new") {
             return {
-                id: 0,
+                id: "",
                 title: "",
                 cover_image_url: "",
-                audio_file_key: null
+                audio_file_key: null,
+                turns: []
             };
         }
     });

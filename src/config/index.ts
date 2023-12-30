@@ -1,5 +1,5 @@
 const config = {
-    apiBaseUrl: "https://kidio-api.herokuapp.com",
+    apiBaseUrl: "https://1t1rd4g6kb.execute-api.us-east-1.amazonaws.com",
     //apiBaseUrl: "http://localhost:2500",
     auth0: {
         domain: "esiotrot.us.auth0.com",
