@@ -1,11 +1,8 @@
-import axios, { AxiosInstance } from "axios";
-
 import config from "../config";
 import { useAuth0 } from "@auth0/auth0-react";
 import { useCallback } from "react";
 
 export interface UseDataServiceOutput {
-    _axios: AxiosInstance;
     destroy(request: DestroyRequest): Promise<unknown>;
     insert(request: InsertRequest): Promise<unknown>;
     query<T = unknown>(request: QueryRequest): Promise<T[]>;
@@ -13,10 +10,6 @@ export interface UseDataServiceOutput {
     getAudioUri(file_key: string): Promise<string>;
     putAudioFile(blob: Blob): Promise<string>;
 }
-
-const _axios = axios.create({
-    baseURL: config.apiBaseUrl
-});
 
 const useDataservice = (): UseDataServiceOutput => {
     const { getAccessTokenSilently } = useAuth0();
@@ -26,15 +19,21 @@ const useDataservice = (): UseDataServiceOutput => {
             const token = await getAccessTokenSilently();
             const formData = new FormData();
             formData.append("file", blob);
-            const {
-                data: { file_key }
-            } = await _axios.post<{ file_key: string }>("/file", formData, {
+
+            const url = `${config.apiBaseUrl}/file`
+            const response = await fetch(url, {
+                method: "POST",
+                body: formData,
                 headers: {
-                    Authorization: `Bearer ${token}`,
-                    "Content-Type": "multipart/form-data"
+                    Authorization: `Bearer ${token}`
                 }
             });
-            return file_key;
+
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }   
+            const data = await response.json();
+            return data;
         },
         [getAccessTokenSilently]
     );
@@ -42,20 +41,24 @@ const useDataservice = (): UseDataServiceOutput => {
     const getAudioUri = useCallback(
         async (file_key: string): Promise<string> => {
             const token = await getAccessTokenSilently();
-            const { data } = await _axios.get<Blob>("/file", {
-                params: { file_key },
+            const url = `${config.apiBaseUrl}/file/${file_key}`;
+            const response = await fetch(url, {
+                method: "GET",
                 headers: {
                     Authorization: `Bearer ${token}`
-                },
-                responseType: "blob"
+                }
             });
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }
+            const blob = await response.blob();
             const dataUrl = await new Promise<string>((resolve) => {
                 const reader = new FileReader();
                 reader.onload = () => {
                     const data = reader.result as string;
                     resolve(data);
                 };
-                reader.readAsDataURL(data);
+                reader.readAsDataURL(blob);
             });
             return dataUrl;
         },
@@ -65,11 +68,19 @@ const useDataservice = (): UseDataServiceOutput => {
     const destroy = useCallback(
         async (request: DestroyRequest): Promise<unknown> => {
             const token = await getAccessTokenSilently();
-            const { data } = await _axios.post("/destroy", request, {
+            const url = `${config.apiBaseUrl}/destroy`;
+            const response = await fetch(url, {
+                method: "POST",
+                body: JSON.stringify(request),
                 headers: {
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 }
             });
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }
+            const data = await response.json();
             return data;
         },
         [getAccessTokenSilently]
@@ -78,11 +89,19 @@ const useDataservice = (): UseDataServiceOutput => {
     const insert = useCallback(
         async (request: InsertRequest): Promise<unknown> => {
             const token = await getAccessTokenSilently();
-            const { data } = await _axios.post("/insert", request, {
+            const url = `${config.apiBaseUrl}/insert`;
+            const response = await fetch(url, {
+                method: "POST",
+                body: JSON.stringify(request),
                 headers: {
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 }
             });
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }
+            const data = await response.json();
             return data;
         },
         [getAccessTokenSilently]
@@ -91,11 +110,19 @@ const useDataservice = (): UseDataServiceOutput => {
     const query = useCallback(
         async <T = unknown>(request: QueryRequest): Promise<T[]> => {
             const token = await getAccessTokenSilently();
-            const { data } = await _axios.post<T[]>("/query", request, {
+            const url = `${config.apiBaseUrl}/query`;
+            const response = await fetch(url, {
+                method: "POST",
+                body: JSON.stringify(request),
                 headers: {
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 }
             });
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }
+            const data = await response.json();
             return data;
         },
         [getAccessTokenSilently]
@@ -104,17 +131,25 @@ const useDataservice = (): UseDataServiceOutput => {
     const update = useCallback(
         async (request: UpdateRequest): Promise<unknown> => {
             const token = await getAccessTokenSilently();
-            const { data } = await _axios.post("/update", request, {
+            const url = `${config.apiBaseUrl}/update`;
+            const response = await fetch(url, {
+                method: "POST",
+                body: JSON.stringify(request),
                 headers: {
+                    "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`
                 }
             });
+            if(!response.ok) {
+                throw new Error(await response.text());
+            }
+            const data = await response.json();
             return data;
         },
         [getAccessTokenSilently]
     );
 
-    return { _axios, destroy, insert, query, update, getAudioUri, putAudioFile };
+    return { destroy, insert, query, update, getAudioUri, putAudioFile };
 };
 
 export default useDataservice;

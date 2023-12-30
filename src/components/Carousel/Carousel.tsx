@@ -2,22 +2,34 @@ import "./Carousel.scss";
 
 import React, { useEffect, useState } from "react";
 
-import { Book } from "../../types";
+import { BookItem } from "../../types";
 import { Link } from "react-router-dom";
 import { Placeholder } from "semantic-ui-react";
+import config from "../../config";
+import { useAuth0 } from "@auth0/auth0-react";
 import useDataservice from "../../hooks/useDataService";
 
 const Carousel: React.FC = () => {
-    const [books, setBooks] = useState<Book[]>();
+    const [books, setBooks] = useState<BookItem[]>();
     const { query } = useDataservice();
+
+    const { getAccessTokenSilently } = useAuth0();
 
     useEffect(() => {
         (async () => {
-            const data = await query<Book>({
-                table: "Book",
-                select: ["id", "cover_image_url"]
+            const token = await getAccessTokenSilently();
+            const url = `${config.apiBaseUrl}/book`;
+            const response = await fetch(url, {
+                method: "GET",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
             });
-
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+            const data = (await response.json()) as BookItem[];
+            setBooks(data);
             setBooks(data);
         })();
     }, [query]);
@@ -35,7 +47,7 @@ const Carousel: React.FC = () => {
 
             {!!books &&
                 books.map((b) => (
-                    <li key={b.id}>
+                    <li key={b.SK}>
                         <Link to={`/book/${b.id}`}>
                             <img src={b.cover_image_url} alt={`Book ${b.id}`} />
                         </Link>

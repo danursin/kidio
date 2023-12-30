@@ -1,13 +1,12 @@
 import { Form, Header, Image, List, Message } from "semantic-ui-react";
+import { Link, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { useHistory, useParams } from "react-router";
 
-import { Book } from "../../types";
-import { Link } from "react-router-dom";
+import { BookItem } from "../../types";
 import SimplePlaceholder from "../../components/SimplePlaceholder";
-import axios from "axios";
 import duration from "humanize-duration";
 import useDataservice from "../../hooks/useDataService";
+import { useParams } from "react-router";
 
 interface TempAudio {
     blob: Blob;
@@ -15,25 +14,26 @@ interface TempAudio {
 }
 
 const Manage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
+    const { id = "new" } = useParams<{ id: string }>();
     const [recorder, setRecorder] = useState<MediaRecorder>();
     const [tempAudio, setTempAudio] = useState<TempAudio>();
     const [recordStartTime, setRecordStartTime] = useState<number>(+new Date());
     const [turnTimes, setTurnTimes] = useState<number[]>([]);
     const [src, setSrc] = useState<string>();
-    const [book, setBook] = useState<Book | undefined>(() => {
+    const [book, setBook] = useState<BookItem | undefined>(() => {
         if (id === "new") {
             return {
-                id: 0,
+                id: "",
                 title: "",
                 cover_image_url: "",
-                audio_file_key: null
+                audio_file_key: null,
+                turns: []
             };
         }
     });
     const [error, setError] = useState<string>();
     const [loading, setLoading] = useState<boolean>(false);
-    const history = useHistory();
+    const navigate = useNavigate();
 
     const { query, insert, update, destroy, getAudioUri, putAudioFile } = useDataservice();
 
@@ -59,9 +59,7 @@ const Manage: React.FC = () => {
                 }
                 setBook(data);
             } catch (err) {
-                if (axios.isAxiosError(err)) {
-                    setError(err.response?.data || "Something unexpected happened");
-                }
+                setError("Something unexpected happened");
             }
         })();
     }, [query, id, getAudioUri]);
@@ -96,7 +94,7 @@ const Manage: React.FC = () => {
 
             setLoading(false);
             const newID = (response as { id: number }).id;
-            history.push(`/book/${newID}/manage`);
+            navigate(`/book/${newID}/manage`, { replace: true });
         }
         setLoading(false);
     };

@@ -1,20 +1,18 @@
-import { AppState, Auth0Provider } from "@auth0/auth0-react";
-
 import App from "./App";
-import History from "./services/History";
+import Auth0ProviderWithHistory from "./components/Auth0ProviderWithHistory";
+import { BrowserRouter } from "react-router-dom";
 import React from "react";
-import ReactDOM from "react-dom";
-import config from "./config";
+import { createRoot } from "react-dom/client";
 
-const onRedirectCallback = (appState: AppState) => {
-    History.replace(appState?.returnTo || window.location.pathname);
-};
+const container = document.getElementById("root");
+const root = createRoot(container as HTMLElement);
 
-ReactDOM.render(
+root.render(
     <React.StrictMode>
-        <Auth0Provider {...config.auth0} redirectUri={window.location.origin} onRedirectCallback={onRedirectCallback}>
-            <App />
-        </Auth0Provider>
-    </React.StrictMode>,
-    document.getElementById("root")
+        <BrowserRouter>
+            <Auth0ProviderWithHistory>
+                <App />
+            </Auth0ProviderWithHistory>
+        </BrowserRouter>
+    </React.StrictMode>
 );
